@@ -36,33 +36,27 @@ class YOLO(Model):
                 "model": ClassificationModel,
                 "trainer": yolo.classify.ClassificationTrainer,
                 "validator": yolo.classify.ClassificationValidator,
-                "predictor": yolo.classify.ClassificationPredictor,
-            },
+                "predictor": yolo.classify.ClassificationPredictor, },
             "detect": {
                 "model": DetectionModel,
                 "trainer": yolo.detect.DetectionTrainer,
                 "validator": yolo.detect.DetectionValidator,
-                "predictor": yolo.detect.DetectionPredictor,
-            },
+                "predictor": yolo.detect.DetectionPredictor, },
             "segment": {
                 "model": SegmentationModel,
                 "trainer": yolo.segment.SegmentationTrainer,
                 "validator": yolo.segment.SegmentationValidator,
-                "predictor": yolo.segment.SegmentationPredictor,
-            },
+                "predictor": yolo.segment.SegmentationPredictor, },
             "pose": {
                 "model": PoseModel,
                 "trainer": yolo.pose.PoseTrainer,
                 "validator": yolo.pose.PoseValidator,
-                "predictor": yolo.pose.PosePredictor,
-            },
+                "predictor": yolo.pose.PosePredictor, },
             "obb": {
                 "model": OBBModel,
                 "trainer": yolo.obb.OBBTrainer,
                 "validator": yolo.obb.OBBValidator,
-                "predictor": yolo.obb.OBBPredictor,
-            },
-        }
+                "predictor": yolo.obb.OBBPredictor, }, }
 
 
 class YOLOWorld(Model):
@@ -89,9 +83,7 @@ class YOLOWorld(Model):
                 "model": WorldModel,
                 "validator": yolo.detect.DetectionValidator,
                 "predictor": yolo.detect.DetectionPredictor,
-                "trainer": yolo.world.WorldTrainer,
-            }
-        }
+                "trainer": yolo.world.WorldTrainer, }}
 
     def set_classes(self, classes):
         """Set classes.

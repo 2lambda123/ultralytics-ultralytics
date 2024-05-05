@@ -14,7 +14,7 @@ You can use Google Colab to work on projects related to [Ultralytics YOLOv8](htt
 
 Google Colaboratory, commonly known as Google Colab, was developed by Google Research in 2017. It is a free online cloud-based Jupyter Notebook environment that allows you to train your machine learning and deep learning models on CPUs, GPUs, and TPUs. The motivation behind developing Google Colab was Google's broader goals to advance AI technology and educational tools, and encourage the use of cloud services.
 
-You can use Google Colab regardless of the specifications and configurations of your local computer. All you need is a Google account and a web browser, and you’re good to go. 
+You can use Google Colab regardless of the specifications and configurations of your local computer. All you need is a Google account and a web browser, and you’re good to go.
 
 ## Training YOLOv8 Using Google Colaboratory
 
@@ -39,24 +39,24 @@ Learn how to train a YOLOv8 model with custom data on YouTube with Nicolai. Chec
 
 ### Common Questions While Working with Google Colab
 
-When working with Google Colab, you might have a few common questions. Let’s answer them. 
+When working with Google Colab, you might have a few common questions. Let’s answer them.
 
-**Q: Why does my Google Colab session timeout?**  
+**Q: Why does my Google Colab session timeout?**
 A: Google Colab sessions can timeout due to inactivity, especially for free users who have a limited session duration.
 
-**Q: Can I increase the session duration in Google Colab?**  
+**Q: Can I increase the session duration in Google Colab?**
 A: Free users face limits, but Google Colab Pro offers extended session durations.
 
-**Q: What should I do if my session closes unexpectedly?**  
+**Q: What should I do if my session closes unexpectedly?**
 A: Regularly save your work to Google Drive or GitHub to avoid losing unsaved progress.
 
-**Q: How can I check my session status and resource usage?**  
+**Q: How can I check my session status and resource usage?**
 A: Colab provides 'RAM Usage' and 'Disk Usage' metrics in the interface to monitor your resources.
 
-**Q: Can I run multiple Colab sessions simultaneously?**  
+**Q: Can I run multiple Colab sessions simultaneously?**
 A: Yes, but be cautious about resource usage to avoid performance issues.
 
-**Q: Does Google Colab have GPU access limitations?**  
+**Q: Does Google Colab have GPU access limitations?**
 A: Yes, free GPU access has limitations, but Google Colab Pro provides more substantial usage options.
 
 ## Key Features of Google Colab

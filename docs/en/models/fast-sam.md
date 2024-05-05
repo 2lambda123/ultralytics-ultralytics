@@ -126,7 +126,7 @@ To perform object tracking on an image, use the `track` method as shown below:
 !!! Example
 
     === "Python"
-   
+
         ```python
         from ultralytics import FastSAM
 
@@ -136,7 +136,7 @@ To perform object tracking on an image, use the `track` method as shown below:
         # Track with a FastSAM model on a video
         results = model.track(source="path/to/video.mp4", imgsz=640)
         ```
-   
+
     === "CLI"
 
         ```bash

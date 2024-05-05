@@ -209,7 +209,7 @@ For instance, if your application only requires detecting 'person' and 'bus' obj
 
         # Initialize a YOLO-World model
         model = YOLO('yolov8s-world.pt')  # or choose yolov8m/l-world.pt
-        
+
         # Define custom classes
         model.set_classes(["person", "bus"])
 
@@ -233,7 +233,7 @@ You can also save a model after setting custom classes. By doing this you create
 
         # Initialize a YOLO-World model
         model = YOLO('yolov8s-world.pt')  # or select yolov8m/l-world.pt
-        
+
         # Define custom classes
         model.set_classes(["person", "bus"])
 

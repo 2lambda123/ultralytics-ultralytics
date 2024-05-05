@@ -85,7 +85,18 @@ def seed_worker(worker_id):  # noqa
         os.sched_setaffinity(0, range(NUM_THREADS))  # fix https://github.com/ultralytics/ultralytics/pull/11195
 
 
-def build_yolo_dataset(cfg, img_path, batch, data, mode="train", rect=False, stride=32, multi_modal=False):
+def build_yolo_dataset(
+    cfg,
+    img_path,
+    batch,
+    data,
+    mode="train",
+    rect=False,
+    stride=32,
+    multi_modal=False,
+    override_label_transforms=None,
+    append_label_transforms=None,
+):
     """Build YOLO Dataset."""
     dataset = YOLOMultiModalDataset if multi_modal else YOLODataset
     return dataset(
@@ -104,6 +115,8 @@ def build_yolo_dataset(cfg, img_path, batch, data, mode="train", rect=False, str
         classes=cfg.classes,
         data=data,
         fraction=cfg.fraction if mode == "train" else 1.0,
+        override_label_transforms=override_label_transforms,
+        append_label_transforms=append_label_transforms,
     )
 
 

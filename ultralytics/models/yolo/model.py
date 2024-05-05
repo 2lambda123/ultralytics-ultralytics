@@ -4,7 +4,14 @@ from pathlib import Path
 
 from ultralytics.engine.model import Model
 from ultralytics.models import yolo
-from ultralytics.nn.tasks import ClassificationModel, DetectionModel, OBBModel, PoseModel, SegmentationModel, WorldModel
+from ultralytics.nn.tasks import (
+    ClassificationModel,
+    DetectionModel,
+    OBBModel,
+    PoseModel,
+    SegmentationModel,
+    WorldModel,
+)
 from ultralytics.utils import ROOT, yaml_load
 
 
@@ -74,8 +81,7 @@ class YOLOWorld(Model):
 
         # Assign default COCO class names when there are no custom names
         if not hasattr(self.model, "names"):
-            self.model.names = yaml_load(
-                ROOT / "cfg/datasets/coco8.yaml").get("names")
+            self.model.names = yaml_load(ROOT / "cfg/datasets/coco8.yaml").get("names")
 
     @property
     def task_map(self):

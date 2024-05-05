@@ -89,11 +89,11 @@ class YOLOWorld(Model):
         }
 
     def set_classes(self, classes):
-        """
-        Set classes.
+        """Set classes.
 
-        Args:
-            classes (List(str)): A list of categories i.e ["person"].
+        :param classes: A list of categories i.e ["person"].
+        :type classes: List(str
+
         """
         # Add background if missing
         background = " "

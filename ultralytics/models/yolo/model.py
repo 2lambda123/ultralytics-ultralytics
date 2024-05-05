@@ -1,11 +1,16 @@
 # Ultralytics YOLO 🚀, AGPL-3.0 license
-
 from pathlib import Path
 
 from ultralytics.engine.model import Model
 from ultralytics.models import yolo
-from ultralytics.nn.tasks import ClassificationModel, DetectionModel, OBBModel, PoseModel, SegmentationModel, WorldModel
-from ultralytics.utils import ROOT, yaml_load
+from ultralytics.nn.tasks import ClassificationModel
+from ultralytics.nn.tasks import DetectionModel
+from ultralytics.nn.tasks import OBBModel
+from ultralytics.nn.tasks import PoseModel
+from ultralytics.nn.tasks import SegmentationModel
+from ultralytics.nn.tasks import WorldModel
+from ultralytics.utils import ROOT
+from ultralytics.utils import yaml_load
 
 
 class YOLO(Model):

@@ -200,6 +200,11 @@ class Exporter:
             self.args.half = False
             assert not self.args.dynamic, "half=True not compatible with dynamic=True, i.e. use only one."
         self.imgsz = check_imgsz(self.args.imgsz, stride=model.stride, min_dim=2)  # check image size
+        if self.args.int8 and engine:
+            self.args.dynamic = True  # enforce dynamic export when using INT8 for TensorRT export
+            if self.args.data is None:
+                LOGGER.warning("WARNING ⚠️ data argument required for TensorRT INT8 export, using data='coco128.yaml'")
+                self.args.data = self.args.data or "coco128.yaml"
         if self.args.optimize:
             assert not ncnn, "optimize=True not compatible with format='ncnn', i.e. use optimize=False"
             assert self.device.type == "cpu", "optimize=True not compatible with cuda devices, i.e. use device='cpu'"
@@ -349,12 +354,12 @@ class Exporter:
             task=self.model.task,
             imgsz=self.imgsz[0],
             augment=False,
-            batch_size=self.args.batch,
+            batch_size=self.args.batch * 2,
         )
         n = len(dataset)
         if n < 300:
             LOGGER.warning(f"{prefix} WARNING ⚠️ >300 images recommended for INT8 calibration, found {n} images.")
-        return build_dataloader(dataset, batch=self.args.batch, workers=0)  # required for batch loading
+        return build_dataloader(dataset, batch=self.args.batch * 2, workers=0)  # required for batch loading
 
     @try_export
     def export_torchscript(self, prefix=colorstr("TorchScript:")):
@@ -679,6 +684,7 @@ class Exporter:
             import tensorrt as trt  # noqa
         check_version(trt.__version__, "7.0.0", hard=True)  # require tensorrt>=7.0.0
 
+        # Setup and checks
         LOGGER.info(f"\n{prefix} starting export with TensorRT {trt.__version__}...")
         is_trt10 = int(trt.__version__.split(".")[0]) >= 10  # is TensorRT >= 10
         assert Path(f_onnx).exists(), f"failed to export ONNX file: {f_onnx}"
@@ -687,6 +693,7 @@ class Exporter:
         if self.args.verbose:
             logger.min_severity = trt.Logger.Severity.VERBOSE
 
+        # Engine builder
         builder = trt.Builder(logger)
         config = builder.create_builder_config()
         workspace = int(self.args.workspace * (1 << 30))
@@ -696,10 +703,14 @@ class Exporter:
             config.max_workspace_size = workspace
         flag = 1 << int(trt.NetworkDefinitionCreationFlag.EXPLICIT_BATCH)
         network = builder.create_network(flag)
+        half = builder.platform_has_fast_fp16 and self.args.half
+        int8 = builder.platform_has_fast_int8 and self.args.int8
+        # Read ONNX file
         parser = trt.OnnxParser(network, logger)
         if not parser.parse_from_file(f_onnx):
             raise RuntimeError(f"failed to load ONNX file: {f_onnx}")
 
+        # Network inputs
         inputs = [network.get_input(i) for i in range(network.num_inputs)]
         outputs = [network.get_output(i) for i in range(network.num_outputs)]
         for inp in inputs:
@@ -713,15 +724,95 @@ class Exporter:
                 LOGGER.warning(f"{prefix} WARNING ⚠️ 'dynamic=True' model requires max batch size, i.e. 'batch=16'")
             profile = builder.create_optimization_profile()
             min_shape = (1, shape[1], 32, 32)  # minimum input shape
-            opt_shape = (max(1, shape[0] // 2), *shape[1:])  # optimal input shape
+            opt_shape = tuple(shape)  # optimal input shape
             max_shape = (*shape[:2], *(max(1, self.args.workspace) * d for d in shape[2:]))  # max input shape
             for inp in inputs:
                 profile.set_shape(inp.name, min_shape, opt_shape, max_shape)
             config.add_optimization_profile(profile)
 
-        half = builder.platform_has_fast_fp16 and self.args.half
-        LOGGER.info(f"{prefix} building FP{16 if half else 32} engine as {f}")
-        if half:
+        if int8:
+            config.set_flag(trt.BuilderFlag.INT8)
+            config.set_calibration_profile(profile)
+            config.profiling_verbosity = trt.ProfilingVerbosity.DETAILED
+
+            class EngineCalibrator(trt.IInt8Calibrator):
+                TRT_INT8_CAL_ALGOS = {
+                    "LEGACY_CALIBRATION",
+                    "ENTROPY_CALIBRATION",
+                    "ENTROPY_CALIBRATION_2",
+                    "MINMAX_CALIBRATION",
+                }
+
+                def __init__(
+                    self,
+                    dataset,  # ultralytics.data.build.InfiniteDataLoader
+                    batch: int,
+                    calibration_algo: str = "ENTROPY_CALIBRATION_2",
+                    cache: str = "",
+                ) -> None:
+                    trt.IInt8Calibrator.__init__(self)
+                    self.dataset = dataset
+                    self.data_iter = iter(dataset)
+                    self.algo = self.fetch_algo(calibration_algo)
+                    self.batch = batch
+                    self.cache = Path(cache)
+
+                def fetch_algo(self, algo: str = "ENTROPY_CALIBRATION_2") -> trt.CalibrationAlgoType:
+                    """Fetch the calibration algorithm to use."""
+                    if algo not in self.TRT_INT8_CAL_ALGOS:
+                        LOGGER.warning(f"Invalid calibration algorithm: {algo}, using 'ENTROPY_CALIBRATION_2' instead")
+                        self.algo = "ENTROPY_CALIBRATION_2"
+                    else:
+                        self.algo = algo
+                    return getattr(trt.CalibrationAlgoType, self.algo)
+
+                def get_algorithm(self) -> trt.CalibrationAlgoType:
+                    """Get the calibration algorithm to use."""
+                    return self.algo
+
+                def get_batch_size(self) -> int:
+                    """Get the batch size to use for calibration."""
+                    return self.batch or 1
+
+                def get_batch(self, names) -> list:
+                    """Get the next batch to use for calibration, as a list of device memory pointers."""
+                    try:
+                        im0s = next(self.data_iter)["img"] / 255.0
+                        im0s = im0s.to("cuda") if im0s.device.type == "cpu" else im0s
+                        return [int(im0s.data_ptr())]
+                    except StopIteration:
+                        # Return [] or None, signal to TensorRT there is no calibration data remaining
+                        return None
+
+                def read_calibration_cache(self) -> bytes:
+                    """
+                    If there is a cache, use it instead of calibrating again.
+
+                    Otherwise, implicitly return None.
+                    """
+                    if self.cache.exists() and self.cache.suffix == ".cache":
+                        return self.cache.read_bytes()
+
+                def write_calibration_cache(self, cache) -> None:
+                    """Write calibration cache to disk."""
+                    _ = self.cache.write_bytes(cache)
+
+            LOGGER.info(f"{prefix} building INT8 engine as {f}")
+
+            # Load dataset and builder (for batching)
+            dataset = self.get_int8_calibration_dataloader(prefix)
+            cache_file = self.file.with_suffix(".cache")
+
+            # Calibrate
+            config.int8_calibrator = EngineCalibrator(
+                dataset=dataset,
+                batch=2 * self.args.batch,
+                calibration_algo=str(self.args.trt_quant_algo).upper(),
+                cache=cache_file,
+            )
+
+        elif half:
+            LOGGER.info(f"{prefix} building FP16 engine as {f}")
             config.set_flag(trt.BuilderFlag.FP16)
 
         # Free CUDA memory

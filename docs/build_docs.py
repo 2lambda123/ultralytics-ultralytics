@@ -30,11 +30,130 @@ import shutil
 import subprocess
 from pathlib import Path
 
+import yaml
 from tqdm import tqdm
 
 os.environ["JUPYTER_PLATFORM_DIRS"] = "1"  # fix DeprecationWarning: Jupyter is migrating to use standard platformdirs
 DOCS = Path(__file__).parent.resolve()
 SITE = DOCS.parent / "site"
+
+EXPORT_TABLE = re.compile(r"(\| Export Format)(.*\|\n)+\|.*\|$", re.MULTILINE)
+YOLO_FORMATS = re.compile(r"`yolov\d\w.*\.?\w+\/?`")
+YOLO_NAME = re.compile(r"(yolov\d\w)")
+TASKS = {
+    "detect": "",
+    "segment": "seg",
+    "classify": "cls",
+    "pose": "pose",
+    "obb": "obb",
+}
+
+
+def max_char_length(data: list[dict]) -> dict:
+    """Return a dictionary containing the maximum length of each key and value in the data."""
+    max_lengths = {}
+    for dictionary in data:
+        for key, value in dictionary.items():
+            if isinstance(key, str):
+                if key not in max_lengths or len(key) > max_lengths[key]:
+                    max_lengths[key] = len(key)
+            if isinstance(value, str):
+                if key not in max_lengths or len(value) > max_lengths[key]:
+                    max_lengths[key] = len(value)
+    return max_lengths
+
+
+def len_diff(entry: str, n: int) -> int:
+    """Return the difference between the length of the entry and the target length `n`."""
+    return abs(len(entry) - n)
+
+
+def pad_entry(entry: str, n: int) -> str:
+    """Pad the entry with spaces to make it n characters long."""
+    return " " + entry + " " * max(len_diff(entry, n) - 1, 1)
+
+
+def format_entry(row: dict, col, width: int) -> str:
+    """Format the entry to fit the column width."""
+    return pad_entry(str(row.get(col, "-")), width)
+
+
+def generate_markdown_table(data: list[dict]) -> str:
+    """
+    Generate a markdown table from a list of dictionaries.
+
+    Args:
+        data (list[dict]): A list of dictionaries to be displayed in a table, should all use the same keys, key --> columns in the table, list entries --> rows.
+
+    Returns:
+        A string containing the markdown formatted table.
+
+    Example:
+        ```python
+        from pathlib import Path
+
+        import yaml
+
+        file = Path("export-table.yaml")
+        output = Path("example_table.md")
+
+        d = yaml.safe_load(file.read_text("utf-8"))
+        table = generate_markdown_table(d)
+
+        output.write_text(table, "utf-8")
+        # Open file to view table
+        ```
+    """
+    table = ""
+    max_width = max_char_length(data)
+    if isinstance(data, list) and all(isinstance(item, dict) for item in data):
+        # Extract column names from the first dictionary
+        column_names = [pad_entry(k, max_width.get(k) + 2) for k in data[0].keys()]
+
+        # Generate table header
+        table += "|" + "|".join(column_names) + "|\n"
+        table += "|" + "|".join(["-" * (max_width.get(k.strip()) + 2) for k in column_names]) + "|\n"
+
+        # Generate table rows
+        for row in data:
+            table += (
+                "|"
+                + "|".join(format_entry(row, col.strip(), max_width.get(col.strip()) + 2) for col in column_names)
+                + "|\n"
+            )
+    else:
+        table = "Invalid input. Expected a list of dictionaries."
+
+    return table
+
+
+def update_col_padding(table_text: str, pad_at: int, marker: str = "| Model") -> str:
+    """Update the padding of the columns in a markdown table string."""
+    # Split to get first two rows of table
+    (hr0, hr1), data_rows = table_text.split("\n")[:2], table_text.split("\n")[2:]
+    # Find the column to update
+    col_start = table_text.index(marker)
+    col_end = table_text.index("|", col_start + 1)
+    col = table_text[col_start:col_end]
+    # Update the column and delimiter rows
+    hr0 = hr0.replace(col, col + " " * pad_at)
+    hr1 = hr1[: col_start + 1] + "-" * pad_at + hr1[col_start + 1 :]
+
+    return "\n".join([hr0, hr1] + data_rows)
+
+
+def update_yolo_formats(table_text: str, file: Path) -> str:
+    """Update YOLO formats in a markdown table string based on the task file name."""
+    if file.parent.name == "tasks":
+        task = TASKS.get(file.stem, "")
+        if any(task):
+            matches = re.findall(YOLO_FORMATS, table_text)
+            for match in matches:
+                replacement = re.sub(YOLO_NAME, rf"\1-{task}", match)
+                table_text = table_text.replace(match, replacement)
+            table_text = update_col_padding(table_text, len(task) + 1)
+
+    return table_text
 
 
 def build_docs(clone_repos=True):
@@ -133,6 +252,23 @@ def main():
     script = ""
     if any(script):
         update_html_head(script)
+
+    # Generate tables from YAMLs
+    tables = []
+    for file in DOCS.rglob("*-table.yaml"):
+        d = yaml.safe_load(file.read_text("utf-8"))
+        tables.append(generate_markdown_table(d))
+
+    # Replace tables with YAML data
+    for md in DOCS.rglob("*.md"):
+        for new_table in tables:
+            content = md.read_text("utf-8")
+            table = re.search(EXPORT_TABLE, content)
+            if table:
+                s = slice(table.start(), table.end())
+                task_table = update_yolo_formats(new_table, md)
+                content = content.replace(content[s], task_table)
+                md.write_text(content, "utf-8")
 
     # Show command to serve built website
     print('Serve site at http://localhost:8000 with "python -m http.server --directory site"')

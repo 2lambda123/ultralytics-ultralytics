@@ -205,7 +205,7 @@ def check_disk_space(url="https://ultralytics.com/assets/coco128.zip", path=Path
         (bool): True if there is sufficient disk space, False otherwise.
     """
     try:
-        r = requests.head(url)  # response
+        r = requests.head(url, timeout=60)  # response
         assert r.status_code < 400, f"URL error for {url}: {r.status_code} {r.reason}"  # check response
     except Exception:
         return True  # requests issue, default to True
@@ -392,9 +392,9 @@ def get_github_assets(repo="ultralytics/assets", version="latest", retry=False):
     if version != "latest":
         version = f"tags/{version}"  # i.e. tags/v6.2
     url = f"https://api.github.com/repos/{repo}/releases/{version}"
-    r = requests.get(url)  # github api
+    r = requests.get(url, timeout=60)  # github api
     if r.status_code != 200 and r.reason != "rate limit exceeded" and retry:  # failed and not 403 rate limit exceeded
-        r = requests.get(url)  # try again
+        r = requests.get(url, timeout=60)  # try again
     if r.status_code != 200:
         LOGGER.warning(f"⚠️ GitHub assets check failure for {url}: {r.status_code} {r.reason}")
         return "", []

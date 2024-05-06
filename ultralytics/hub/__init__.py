@@ -70,7 +70,7 @@ def logout():
 
 def reset_model(model_id=""):
     """Reset a trained model to an untrained state."""
-    r = requests.post(f"{HUB_API_ROOT}/model-reset", json={"modelId": model_id}, headers={"x-api-key": Auth().api_key})
+    r = requests.post(f"{HUB_API_ROOT}/model-reset", json={"modelId": model_id}, headers={"x-api-key": Auth().api_key}, timeout=60)
     if r.status_code == 200:
         LOGGER.info(f"{PREFIX}Model reset successfully")
         return
@@ -88,8 +88,8 @@ def export_model(model_id="", format="torchscript"):
     """Export a model to all formats."""
     assert format in export_fmts_hub(), f"Unsupported export format '{format}', valid formats are {export_fmts_hub()}"
     r = requests.post(
-        f"{HUB_API_ROOT}/v1/models/{model_id}/export", json={"format": format}, headers={"x-api-key": Auth().api_key}
-    )
+        f"{HUB_API_ROOT}/v1/models/{model_id}/export", json={"format": format}, headers={"x-api-key": Auth().api_key}, 
+    timeout=60)
     assert r.status_code == 200, f"{PREFIX}{format} export failure {r.status_code} {r.reason}"
     LOGGER.info(f"{PREFIX}{format} export started ✅")
 
@@ -101,7 +101,7 @@ def get_export(model_id="", format="torchscript"):
         f"{HUB_API_ROOT}/get-export",
         json={"apiKey": Auth().api_key, "modelId": model_id, "format": format},
         headers={"x-api-key": Auth().api_key},
-    )
+    timeout=60)
     assert r.status_code == 200, f"{PREFIX}{format} get_export failure {r.status_code} {r.reason}"
     return r.json()
 

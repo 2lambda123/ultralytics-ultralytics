@@ -96,8 +96,8 @@ def requests_with_progress(method, url, **kwargs):
     """
     progress = kwargs.pop("progress", False)
     if not progress:
-        return requests.request(method, url, **kwargs)
-    response = requests.request(method, url, stream=True, **kwargs)
+        return requests.request(method, url, **kwargs, timeout=60)
+    response = requests.request(method, url, stream=True, **kwargs, timeout=60)
     total = int(response.headers.get("content-length", 0) if isinstance(progress, bool) else progress)  # total size
     try:
         pbar = TQDM(total=total, unit="B", unit_scale=True, unit_divisor=1024)

@@ -3,7 +3,6 @@
 import gc
 import math
 import os
-import random
 import time
 from contextlib import contextmanager
 from copy import deepcopy
@@ -26,6 +25,7 @@ from ultralytics.utils import (
     colorstr,
 )
 from ultralytics.utils.checks import check_version
+import secrets
 
 try:
     import thop
@@ -416,7 +416,7 @@ def one_cycle(y1=0.0, y2=1.0, steps=100):
 
 def init_seeds(seed=0, deterministic=False):
     """Initialize random number generator (RNG) seeds https://pytorch.org/docs/stable/notes/randomness.html."""
-    random.seed(seed)
+    secrets.SystemRandom().seed(seed)
     np.random.seed(seed)
     torch.manual_seed(seed)
     torch.cuda.manual_seed(seed)

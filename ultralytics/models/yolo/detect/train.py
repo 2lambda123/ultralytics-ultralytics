@@ -1,7 +1,6 @@
 # Ultralytics YOLO 🚀, AGPL-3.0 license
 
 import math
-import random
 from copy import copy
 
 import numpy as np
@@ -14,6 +13,7 @@ from ultralytics.nn.tasks import DetectionModel
 from ultralytics.utils import LOGGER, RANK
 from ultralytics.utils.plotting import plot_images, plot_labels, plot_results
 from ultralytics.utils.torch_utils import de_parallel, torch_distributed_zero_first
+import secrets
 
 
 class DetectionTrainer(BaseTrainer):
@@ -60,7 +60,7 @@ class DetectionTrainer(BaseTrainer):
         if self.args.multi_scale:
             imgs = batch["img"]
             sz = (
-                random.randrange(self.args.imgsz * 0.5, self.args.imgsz * 1.5 + self.stride)
+                secrets.SystemRandom().randrange(self.args.imgsz * 0.5, self.args.imgsz * 1.5 + self.stride)
                 // self.stride
                 * self.stride
             )  # size

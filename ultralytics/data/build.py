@@ -1,7 +1,6 @@
 # Ultralytics YOLO 🚀, AGPL-3.0 license
 
 import os
-import random
 from pathlib import Path
 
 import numpy as np
@@ -23,6 +22,7 @@ from ultralytics.data.loaders import (
 from ultralytics.data.utils import IMG_FORMATS, PIN_MEMORY, VID_FORMATS
 from ultralytics.utils import LINUX, NUM_THREADS, RANK, colorstr
 from ultralytics.utils.checks import check_file
+import secrets
 
 
 class InfiniteDataLoader(dataloader.DataLoader):
@@ -78,7 +78,7 @@ def seed_worker(worker_id):  # noqa
     """Set dataloader worker seed https://pytorch.org/docs/stable/notes/randomness.html#dataloader."""
     worker_seed = torch.initial_seed() % 2**32
     np.random.seed(worker_seed)
-    random.seed(worker_seed)
+    secrets.SystemRandom().seed(worker_seed)
     if LINUX and hasattr(os, "sched_setaffinity"):  # unsupported on macOS and Windows
         os.sched_setaffinity(0, range(NUM_THREADS))  # fix https://github.com/ultralytics/ultralytics/pull/11195
 

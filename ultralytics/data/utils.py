@@ -4,7 +4,6 @@ import contextlib
 import hashlib
 import json
 import os
-import random
 import subprocess
 import time
 import zipfile
@@ -34,6 +33,7 @@ from ultralytics.utils import (
 from ultralytics.utils.checks import check_file, check_font, is_ascii
 from ultralytics.utils.downloads import download, safe_download, unzip_file
 from ultralytics.utils.ops import segments2boxes
+import secrets
 
 HELP_URL = "See https://docs.ultralytics.com/datasets/detect for dataset formatting guidance."
 IMG_FORMATS = {"bmp", "dng", "jpeg", "jpg", "mpo", "png", "tif", "tiff", "webp", "pfm"}  # image suffixes
@@ -638,8 +638,8 @@ def autosplit(path=DATASETS_DIR / "coco8/images", weights=(0.9, 0.1, 0.0), annot
     path = Path(path)  # images dir
     files = sorted(x for x in path.rglob("*.*") if x.suffix[1:].lower() in IMG_FORMATS)  # image files only
     n = len(files)  # number of files
-    random.seed(0)  # for reproducibility
-    indices = random.choices([0, 1, 2], weights=weights, k=n)  # assign each image to a split
+    secrets.SystemRandom().seed(0)  # for reproducibility
+    indices = secrets.SystemRandom().choices([0, 1, 2], weights=weights, k=n)  # assign each image to a split
 
     txt = ["autosplit_train.txt", "autosplit_val.txt", "autosplit_test.txt"]  # 3 txt files
     for x in txt:

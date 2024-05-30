@@ -3,7 +3,6 @@
 import glob
 import math
 import os
-import random
 from copy import deepcopy
 from multiprocessing.pool import ThreadPool
 from pathlib import Path
@@ -16,6 +15,7 @@ from torch.utils.data import Dataset
 
 from ultralytics.data.utils import FORMATS_HELP_MSG, HELP_URL, IMG_FORMATS
 from ultralytics.utils import DEFAULT_CFG, LOCAL_RANK, LOGGER, NUM_THREADS, TQDM
+import secrets
 
 
 class BaseDataset(Dataset):
@@ -206,7 +206,7 @@ class BaseDataset(Dataset):
         b, gb = 0, 1 << 30  # bytes of cached images, bytes per gigabytes
         n = min(self.ni, 30)  # extrapolate from 30 random images
         for _ in range(n):
-            im = cv2.imread(random.choice(self.im_files))  # sample image
+            im = cv2.imread(secrets.choice(self.im_files))  # sample image
             ratio = self.imgsz / max(im.shape[0], im.shape[1])  # max(h, w)  # ratio
             b += im.nbytes * ratio**2
         mem_required = b * self.ni / n * (1 + safety_margin)  # GB required to cache dataset into RAM

@@ -2,7 +2,6 @@
 
 import os
 import platform
-import random
 import threading
 import time
 from pathlib import Path
@@ -27,6 +26,7 @@ from ultralytics.utils import (
     get_git_origin_url,
 )
 from ultralytics.utils.downloads import GITHUB_ASSETS_NAMES
+import secrets
 
 HUB_API_ROOT = os.environ.get("ULTRALYTICS_HUB_API", "https://api.ultralytics.com")
 HUB_WEB_ROOT = os.environ.get("ULTRALYTICS_HUB_WEB", "https://hub.ultralytics.com")
@@ -193,7 +193,7 @@ class Events:
             "python": ".".join(platform.python_version_tuple()[:2]),  # i.e. 3.10
             "version": __version__,
             "env": ENVIRONMENT,
-            "session_id": round(random.random() * 1e15),
+            "session_id": round(secrets.SystemRandom().random() * 1e15),
             "engagement_time_msec": 1000,
         }
         self.enabled = (

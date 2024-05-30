@@ -16,8 +16,6 @@ Example:
     model.tune(data='coco8.yaml', epochs=10, iterations=300, optimizer='AdamW', plots=False, save=False, val=False)
     ```
 """
-
-import random
 import shutil
 import subprocess
 import time
@@ -28,6 +26,7 @@ import torch
 from ultralytics.cfg import get_cfg, get_save_dir
 from ultralytics.utils import DEFAULT_CFG, LOGGER, callbacks, colorstr, remove_colorstr, yaml_print, yaml_save
 from ultralytics.utils.plotting import plot_tune_results
+import secrets
 
 
 class Tuner:
@@ -133,7 +132,7 @@ class Tuner:
             w = x[:, 0] - x[:, 0].min() + 1e-6  # weights (sum > 0)
             if parent == "single" or len(x) == 1:
                 # x = x[random.randint(0, n - 1)]  # random selection
-                x = x[random.choices(range(n), weights=w)[0]]  # weighted selection
+                x = x[secrets.SystemRandom().choices(range(n), weights=w)[0]]  # weighted selection
             elif parent == "weighted":
                 x = (x * w.reshape(n, 1)).sum(0) / w.sum()  # weighted combination
 

@@ -1,7 +1,6 @@
 # Ultralytics YOLO 🚀, AGPL-3.0 license
 
 import math
-import random
 from copy import deepcopy
 from typing import Tuple, Union
 
@@ -17,6 +16,7 @@ from ultralytics.utils.instance import Instances
 from ultralytics.utils.metrics import bbox_ioa
 from ultralytics.utils.ops import segment2box, xyxyxyxy2xywhr
 from ultralytics.utils.torch_utils import TORCHVISION_0_10, TORCHVISION_0_11, TORCHVISION_0_13
+import secrets
 
 DEFAULT_MEAN = (0.0, 0.0, 0.0)
 DEFAULT_STD = (1.0, 1.0, 1.0)
@@ -126,7 +126,7 @@ class BaseMixTransform:
 
     def __call__(self, labels):
         """Applies pre-processing transforms and mixup/mosaic transforms to labels data."""
-        if random.uniform(0, 1) > self.p:
+        if secrets.SystemRandom().uniform(0, 1) > self.p:
             return labels
 
         # Get index of one or three other images
@@ -201,11 +201,11 @@ class Mosaic(BaseMixTransform):
 
     def get_indexes(self, buffer=True):
         """Return a list of random indexes from the dataset."""
-        self.n = 9 if random.uniform(0, 1) < self.p9 else 4
+        self.n = 9 if secrets.SystemRandom().uniform(0, 1) < self.p9 else 4
         if buffer:  # select images from buffer
-            return random.choices(list(self.dataset.buffer), k=self.n - 1)
+            return secrets.SystemRandom().choices(list(self.dataset.buffer), k=self.n - 1)
         else:  # select any images
-            return [random.randint(0, len(self.dataset) - 1) for _ in range(self.n - 1)]
+            return [secrets.SystemRandom().randint(0, len(self.dataset) - 1) for _ in range(self.n - 1)]
 
     def _mix_transform(self, labels):
         """Apply mixup transformation to the input image and labels."""
@@ -253,7 +253,7 @@ class Mosaic(BaseMixTransform):
         """Create a 2x2 image mosaic."""
         mosaic_labels = []
         s = self.imgsz
-        yc, xc = (int(random.uniform(-x, 2 * s + x)) for x in self.border)  # mosaic center x, y
+        yc, xc = (int(secrets.SystemRandom().uniform(-x, 2 * s + x)) for x in self.border)  # mosaic center x, y
         for i in range(4):
             labels_patch = labels if i == 0 else labels["mix_labels"][i - 1]
             # Load image
@@ -378,7 +378,7 @@ class MixUp(BaseMixTransform):
 
     def get_indexes(self):
         """Get a random index from the dataset."""
-        return random.randint(0, len(self.dataset) - 1)
+        return secrets.SystemRandom().randint(0, len(self.dataset) - 1)
 
     def _mix_transform(self, labels):
         """Applies MixUp augmentation as per https://arxiv.org/pdf/1710.09412.pdf."""
@@ -449,26 +449,26 @@ class RandomPerspective:
 
         # Perspective
         P = np.eye(3, dtype=np.float32)
-        P[2, 0] = random.uniform(-self.perspective, self.perspective)  # x perspective (about y)
-        P[2, 1] = random.uniform(-self.perspective, self.perspective)  # y perspective (about x)
+        P[2, 0] = secrets.SystemRandom().uniform(-self.perspective, self.perspective)  # x perspective (about y)
+        P[2, 1] = secrets.SystemRandom().uniform(-self.perspective, self.perspective)  # y perspective (about x)
 
         # Rotation and Scale
         R = np.eye(3, dtype=np.float32)
-        a = random.uniform(-self.degrees, self.degrees)
+        a = secrets.SystemRandom().uniform(-self.degrees, self.degrees)
         # a += random.choice([-180, -90, 0, 90])  # add 90deg rotations to small rotations
-        s = random.uniform(1 - self.scale, 1 + self.scale)
+        s = secrets.SystemRandom().uniform(1 - self.scale, 1 + self.scale)
         # s = 2 ** random.uniform(-scale, scale)
         R[:2] = cv2.getRotationMatrix2D(angle=a, center=(0, 0), scale=s)
 
         # Shear
         S = np.eye(3, dtype=np.float32)
-        S[0, 1] = math.tan(random.uniform(-self.shear, self.shear) * math.pi / 180)  # x shear (deg)
-        S[1, 0] = math.tan(random.uniform(-self.shear, self.shear) * math.pi / 180)  # y shear (deg)
+        S[0, 1] = math.tan(secrets.SystemRandom().uniform(-self.shear, self.shear) * math.pi / 180)  # x shear (deg)
+        S[1, 0] = math.tan(secrets.SystemRandom().uniform(-self.shear, self.shear) * math.pi / 180)  # y shear (deg)
 
         # Translation
         T = np.eye(3, dtype=np.float32)
-        T[0, 2] = random.uniform(0.5 - self.translate, 0.5 + self.translate) * self.size[0]  # x translation (pixels)
-        T[1, 2] = random.uniform(0.5 - self.translate, 0.5 + self.translate) * self.size[1]  # y translation (pixels)
+        T[0, 2] = secrets.SystemRandom().uniform(0.5 - self.translate, 0.5 + self.translate) * self.size[0]  # x translation (pixels)
+        T[1, 2] = secrets.SystemRandom().uniform(0.5 - self.translate, 0.5 + self.translate) * self.size[1]  # y translation (pixels)
 
         # Combined rotation matrix
         M = T @ S @ R @ P @ C  # order of operations (right to left) is IMPORTANT
@@ -713,10 +713,10 @@ class RandomFlip:
         w = 1 if instances.normalized else w
 
         # Flip up-down
-        if self.direction == "vertical" and random.random() < self.p:
+        if self.direction == "vertical" and secrets.SystemRandom().random() < self.p:
             img = np.flipud(img)
             instances.flipud(h)
-        if self.direction == "horizontal" and random.random() < self.p:
+        if self.direction == "horizontal" and secrets.SystemRandom().random() < self.p:
             img = np.fliplr(img)
             instances.fliplr(w)
             # For keypoints
@@ -849,7 +849,7 @@ class CopyPaste:
             ioa = bbox_ioa(ins_flip.bboxes, instances.bboxes)  # intersection over area, (N, M)
             indexes = np.nonzero((ioa < self.iou_thres).all(1))[0]  # (N, )
             n = len(indexes)
-            for j in random.sample(list(indexes), k=round(self.p * n)):
+            for j in secrets.SystemRandom().sample(list(indexes), k=round(self.p * n)):
                 cls = np.concatenate((cls, cls[[j]]), axis=0)
                 instances = Instances.concatenate((instances, ins_flip[[j]]), axis=0)
                 cv2.drawContours(im_new, instances.segments[[j]].astype(np.int32), -1, (1, 1, 1), cv2.FILLED)
@@ -910,7 +910,7 @@ class Albumentations:
             labels["instances"].normalize(*im.shape[:2][::-1])
             bboxes = labels["instances"].bboxes
             # TODO: add supports of segments and keypoints
-            if self.transform and random.random() < self.p:
+            if self.transform and secrets.SystemRandom().random() < self.p:
                 new = self.transform(image=im, bboxes=bboxes, class_labels=cls)  # transformed
                 if len(new["class_labels"]) > 0:  # skip update if no bbox in new im
                     labels["img"] = new["image"]
@@ -1004,7 +1004,7 @@ class Format:
         if len(img.shape) < 3:
             img = np.expand_dims(img, -1)
         img = img.transpose(2, 0, 1)
-        img = np.ascontiguousarray(img[::-1] if random.uniform(0, 1) > self.bgr else img)
+        img = np.ascontiguousarray(img[::-1] if secrets.SystemRandom().uniform(0, 1) > self.bgr else img)
         img = torch.from_numpy(img)
         return img
 
@@ -1058,17 +1058,17 @@ class RandomLoadText:
         pos_labels = np.unique(cls).tolist()
 
         if len(pos_labels) > self.max_samples:
-            pos_labels = set(random.sample(pos_labels, k=self.max_samples))
+            pos_labels = set(secrets.SystemRandom().sample(pos_labels, k=self.max_samples))
 
-        neg_samples = min(min(num_classes, self.max_samples) - len(pos_labels), random.randint(*self.neg_samples))
+        neg_samples = min(min(num_classes, self.max_samples) - len(pos_labels), secrets.SystemRandom().randint(*self.neg_samples))
         neg_labels = []
         for i in range(num_classes):
             if i not in pos_labels:
                 neg_labels.append(i)
-        neg_labels = random.sample(neg_labels, k=neg_samples)
+        neg_labels = secrets.SystemRandom().sample(neg_labels, k=neg_samples)
 
         sampled_labels = pos_labels + neg_labels
-        random.shuffle(sampled_labels)
+        secrets.SystemRandom().shuffle(sampled_labels)
 
         label2ids = {label: i for i, label in enumerate(sampled_labels)}
         valid_idx = np.zeros(len(labels["instances"]), dtype=bool)
@@ -1086,7 +1086,7 @@ class RandomLoadText:
         for label in sampled_labels:
             prompts = class_texts[label]
             assert len(prompts) > 0
-            prompt = self.prompt_format.format(prompts[random.randrange(len(prompts))])
+            prompt = self.prompt_format.format(prompts[secrets.SystemRandom().randrange(len(prompts))])
             texts.append(prompt)
 
         if self.padding:

@@ -31,6 +31,7 @@ import subprocess
 from pathlib import Path
 
 from tqdm import tqdm
+from security import safe_command
 
 os.environ["JUPYTER_PLATFORM_DIRS"] = "1"  # fix DeprecationWarning: Jupyter is migrating to use standard platformdirs
 DOCS = Path(__file__).parent.resolve()
@@ -58,7 +59,7 @@ def build_docs(clone_repos=True):
 
     # Build the main documentation
     print(f"Building docs from {DOCS}")
-    subprocess.run(f"mkdocs build -f {DOCS.parent}/mkdocs.yml --strict", check=True, shell=True)
+    safe_command.run(subprocess.run, f"mkdocs build -f {DOCS.parent}/mkdocs.yml --strict", check=True, shell=True)
     print(f"Site built at {SITE}")
 
 

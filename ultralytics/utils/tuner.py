@@ -4,6 +4,7 @@ import subprocess
 
 from ultralytics.cfg import TASK2DATA, TASK2METRIC, get_save_dir
 from ultralytics.utils import DEFAULT_CFG, DEFAULT_CFG_DICT, LOGGER, NUM_THREADS, checks
+from security import safe_command
 
 
 def run_ray_tune(
@@ -40,7 +41,7 @@ def run_ray_tune(
         train_args = {}
 
     try:
-        subprocess.run("pip install ray[tune]".split(), check=True)  # do not add single quotes here
+        safe_command.run(subprocess.run, "pip install ray[tune]".split(), check=True)  # do not add single quotes here
 
         import ray
         from ray import tune

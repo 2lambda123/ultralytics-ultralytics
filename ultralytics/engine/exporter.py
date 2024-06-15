@@ -92,6 +92,7 @@ from ultralytics.utils.downloads import attempt_download_asset, get_github_asset
 from ultralytics.utils.files import file_size, spaces_in_path
 from ultralytics.utils.ops import Profile
 from ultralytics.utils.torch_utils import TORCH_1_13, get_latest_opset, select_device, smart_inference_mode
+from security import safe_command
 
 
 def export_formats():
@@ -580,7 +581,7 @@ class Exporter:
         ]
         f.mkdir(exist_ok=True)  # make ncnn_model directory
         LOGGER.info(f"{prefix} running '{' '.join(cmd)}'")
-        subprocess.run(cmd, check=True)
+        safe_command.run(subprocess.run, cmd, check=True)
 
         # Remove debug files
         pnnx_files = [x.split("=")[-1] for x in pnnx_args]
@@ -889,15 +890,15 @@ class Exporter:
                 "sudo apt-get update",
                 "sudo apt-get install edgetpu-compiler",
             ):
-                subprocess.run(c if sudo else c.replace("sudo ", ""), shell=True, check=True)
-        ver = subprocess.run(cmd, shell=True, capture_output=True, check=True).stdout.decode().split()[-1]
+                safe_command.run(subprocess.run, c if sudo else c.replace("sudo ", ""), shell=True, check=True)
+        ver = safe_command.run(subprocess.run, cmd, shell=True, capture_output=True, check=True).stdout.decode().split()[-1]
 
         LOGGER.info(f"\n{prefix} starting export with Edge TPU compiler {ver}...")
         f = str(tflite_model).replace(".tflite", "_edgetpu.tflite")  # Edge TPU model
 
         cmd = f'edgetpu_compiler -s -d -k 10 --out_dir "{Path(f).parent}" "{tflite_model}"'
         LOGGER.info(f"{prefix} running '{cmd}'")
-        subprocess.run(cmd, shell=True)
+        safe_command.run(subprocess.run, cmd, shell=True)
         self._add_tflite_metadata(f)
         return f, None
 
@@ -928,7 +929,7 @@ class Exporter:
                 f'--input_format=tf_frozen_model {quantization} --output_node_names={outputs} "{fpb_}" "{f_}"'
             )
             LOGGER.info(f"{prefix} running '{cmd}'")
-            subprocess.run(cmd, shell=True)
+            safe_command.run(subprocess.run, cmd, shell=True)
 
         if " " in f:
             LOGGER.warning(f"{prefix} WARNING ⚠️ your model may not work correctly with spaces in path '{f}'.")

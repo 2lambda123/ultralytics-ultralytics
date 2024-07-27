@@ -34,6 +34,7 @@ from ultralytics.utils import (
 from ultralytics.utils.checks import check_file, check_font, is_ascii
 from ultralytics.utils.downloads import download, safe_download, unzip_file
 from ultralytics.utils.ops import segments2boxes
+from security import safe_command
 
 HELP_URL = "See https://docs.ultralytics.com/datasets/detect for dataset formatting guidance."
 IMG_FORMATS = {"bmp", "dng", "jpeg", "jpg", "mpo", "png", "tif", "tiff", "webp", "pfm"}  # image suffixes
@@ -377,7 +378,7 @@ def check_cls_dataset(dataset, split=""):
         LOGGER.warning(f"\nDataset not found ⚠️, missing path {data_dir}, attempting download...")
         t = time.time()
         if str(dataset) == "imagenet":
-            subprocess.run(f"bash {ROOT / 'data/scripts/get_imagenet.sh'}", shell=True, check=True)
+            safe_command.run(subprocess.run, f"bash {ROOT / 'data/scripts/get_imagenet.sh'}", shell=True, check=True)
         else:
             url = f"https://github.com/ultralytics/yolov5/releases/download/v1.0/{dataset}.zip"
             download(url, dir=data_dir.parent)

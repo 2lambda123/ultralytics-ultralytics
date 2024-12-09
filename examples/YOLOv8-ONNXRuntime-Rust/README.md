@@ -35,7 +35,7 @@ export LD_LIBRARY_PATH=/home/qweasd/Documents/onnxruntime-linux-x64-gpu-1.16.3/l
 source ~/.bashrc
 ```
 
-### 3. \[Optional\] Install CUDA & CuDNN & TensorRT
+### 3. [Optional] Install CUDA & CuDNN & TensorRT
 
 - CUDA execution provider requires CUDA v11.6+.
 - TensorRT execution provider requires CUDA v11.4+ and TensorRT v8.4+.
@@ -135,11 +135,11 @@ Results: (yolov8m.onnx, batch=1, 3 times, trt, fp16, RTX 3060Ti)
 
 And also:
 
-`--conf`: confidence threshold \[default: 0.3\]
+`--conf`: confidence threshold [default: 0.3]
 
-`--iou`: iou threshold in NMS \[default: 0.45\]
+`--iou`: iou threshold in NMS [default: 0.45]
 
-`--kconf`: confidence threshold of keypoint \[default: 0.55\]
+`--kconf`: confidence threshold of keypoint [default: 0.55]
 
 `--plot`: plot inference result with random RGB color and save
 
